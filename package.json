@@ -9,6 +9,7 @@
     "d3": "^4.5.0",
     "react": "^15.4.2",
     "react-dom": "^15.4.2",
+    "react-select": "^1.0.0-rc.3",
     "topojson": "^2.2.0",
     "topojson-client": "^2.1.0"
   },

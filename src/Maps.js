@@ -31,7 +31,7 @@ const Curve = ({ start, end }) => {
     return (
         <path d={line([start, middle, end])}
               style={{stroke: 'black',
-                      strokeWidth: '0.3px',
+                      strokeWidth: '0.6px',
                       fillOpacity: 0}} />
     );
 };
@@ -57,14 +57,19 @@ const CountryMigrations = ({ data, nameIdMap, centroids }) => {
     )
 };
 
-const Migrations = ({ topology, projection, data, nameIdMap }) => {
+const Migrations = ({ topology, projection, data, nameIdMap, focusCountry }) => {
+    if (!data) {
+        return null;
+    }
+
     const countries = topojson.feature(topology, topology.objects.countries),
           path = d3.geoPath(projection),
           centroids = _.fromPairs(countries.features
                                            .map(country => [country.id,
                                                             path.centroid(country)]));
 
-    const dataToDraw = data.filter(({ id }) => !!centroids[id]);
+    const dataToDraw = data.filter(({ id }) => id === focusCountry)
+                           .filter(({ id }) => !!centroids[id]);
 
     return (
         <g>
@@ -83,7 +88,7 @@ class World extends Component {
     }
 
     projection = d3.geoEquirectangular()
-                   .center([-50, 30])
+                   .center([-50, 40])
                    .scale(200)
 
     componentWillMount() {
@@ -107,7 +112,8 @@ class World extends Component {
             <svg width={width} height={height}>
                 <Map topology={topology} projection={this.projection} />
                 <Migrations topology={topology} projection={this.projection}
-                            data={this.props.data} nameIdMap={this.props.nameIdMap} />
+                            data={this.props.data} nameIdMap={this.props.nameIdMap}
+                            focusCountry={this.props.focusCountry} />
             </svg>
         )
     }
