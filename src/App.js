@@ -30,7 +30,7 @@ class App extends Component {
         return (
             <div className="App">
                 <p className="App-intro">
-                    <World width={1024} height={1024}
+                    <World width={1440} height={1080}
                            data={this.state.data} nameIdMap={this.state.nameIdMap} />
                 </p>
             </div>

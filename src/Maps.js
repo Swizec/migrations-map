@@ -21,23 +21,37 @@ const Map = ({ topology, projection }) => {
     );
 };
 
-const CountryMigrations = ({ data, nameIdMap, centroids }) => {
+const Curve = ({ start, end }) => {
     const line = d3.line()
                    .curve(d3.curveBasis),
-          destination = centroids[data.id];
+          [x1, y1] = start,
+          [x2, y2] = end,
+          middle = [(x1 + x2)/2, (y1 + y2)/2-200];
 
-    console.log(data.name);
+    return (
+        <path d={line([start, middle, end])}
+              style={{stroke: 'black',
+                      strokeWidth: '0.3px',
+                      fillOpacity: 0}} />
+    );
+};
+
+const CountryMigrations = ({ data, nameIdMap, centroids }) => {
+    const destination = centroids[data.id];
+
+    /* console.log(Object.values(data.sources)
+       .filter(d => !Number.isNaN(d))
+       .reduce((d, sum) => d+sum, 0)); */
 
     const sources =  Object.keys(data.sources)
                            .filter(name => centroids[nameIdMap[name]])
+                           .filter(name => data.sources[name] !== 0)
                            .map(name => centroids[nameIdMap[name]]);
     return (
         <g>
             {sources.map((source, i) => (
-                <path d={line([destination, source])}
-                      style={{stroke: 'black',
-                              strokeWidth: '1px'}}
-                      key={`${data.id}-${i}`} />
+                <Curve start={source} end={destination}
+                       key={`${data.id}-${i}`} />
              ))}
         </g>
     )
@@ -50,11 +64,15 @@ const Migrations = ({ topology, projection, data, nameIdMap }) => {
                                            .map(country => [country.id,
                                                             path.centroid(country)]));
 
+    const dataToDraw = data.filter(({ id }) => !!centroids[id]);
 
     return (
         <g>
-            <CountryMigrations data={data[10]} nameIdMap={nameIdMap}
-                               centroids={centroids} />
+            {dataToDraw.map(data => (
+                <CountryMigrations data={data} nameIdMap={nameIdMap}
+                                   centroids={centroids}
+                                   key={`migrations-${data.id}`} />
+            ))}
         </g>
     );
 };
@@ -65,6 +83,7 @@ class World extends Component {
     }
 
     projection = d3.geoEquirectangular()
+                   .center([-50, 30])
                    .scale(200)
 
     componentWillMount() {
