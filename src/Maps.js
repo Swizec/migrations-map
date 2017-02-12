@@ -35,9 +35,9 @@ const CountryMigrations = ({ data, nameIdMap, centroids }) => {
         <g>
             {sources.map((source, i) => (
                 <path d={line([destination, source])}
-                style={{stroke: 'black',
-                        strokeWidth: '1px'}}
-                key={`${data.id}-${i}`} />
+                      style={{stroke: 'black',
+                              strokeWidth: '1px'}}
+                      key={`${data.id}-${i}`} />
              ))}
         </g>
     )
