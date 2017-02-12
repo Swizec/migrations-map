@@ -21,7 +21,7 @@ const Map = ({ topology, projection }) => {
     );
 };
 
-const Curve = ({ start, end }) => {
+const Curve = ({ start, end, color }) => {
     const line = d3.line()
                    .curve(d3.curveBasis),
           [x1, y1] = start,
@@ -30,8 +30,9 @@ const Curve = ({ start, end }) => {
 
     return (
         <path d={line([start, middle, end])}
-              style={{stroke: 'black',
-                      strokeWidth: '0.6px',
+              style={{stroke: color,
+                      strokeWidth: '1.6px',
+                      strokeOpacity: '0.7',
                       fillOpacity: 0}} />
     );
 };
@@ -43,14 +44,20 @@ const CountryMigrations = ({ data, nameIdMap, centroids }) => {
        .filter(d => !Number.isNaN(d))
        .reduce((d, sum) => d+sum, 0)); */
 
-    const sources =  Object.keys(data.sources)
-                           .filter(name => centroids[nameIdMap[name]])
-                           .filter(name => data.sources[name] !== 0)
-                           .map(name => centroids[nameIdMap[name]]);
+    const sources = Object.keys(data.sources)
+                          .filter(name => centroids[nameIdMap[name]])
+                          .filter(name => data.sources[name] !== 0),
+          color = d3.scaleLog()
+                    .domain(d3.extent(sources.map(name => data.sources[name])))
+                    .range([0, 1]);
+
+    console.log(d3.extent(sources.map(name => data.sources[name])));
+
     return (
         <g>
-            {sources.map((source, i) => (
-                <Curve start={source} end={destination}
+            {sources.map((name, i) => (
+                <Curve start={centroids[nameIdMap[name]]} end={destination}
+                       color={d3.interpolateWarm(color(data.sources[name]))}
                        key={`${data.id}-${i}`} />
              ))}
         </g>
