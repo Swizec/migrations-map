@@ -4,9 +4,44 @@ import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
 import _ from 'lodash';
 
-const Map = ({ topology, projection }) => {
+function migrationSources(data, centroids, nameIdMap) {
+    return Object.keys(data.sources)
+                 .filter(name => centroids[nameIdMap[name]])
+                 .filter(name => data.sources[name] !== 0)
+}
+
+const Map = ({ topology, projection, data, nameIdMap, focusCountry }) => {
     const D = d3.geoPath(projection),
-          countries = topojson.feature(topology, topology.objects.countries);
+          countries = topojson.feature(topology, topology.objects.countries),
+          centroids = _.fromPairs(countries.features
+                                           .map(country => [country.id,
+                                                            D.centroid(country)])),
+          idNameMap = _.invert(nameIdMap);
+
+    let sources = [],
+        focusData = data.find(({ id }) => id === focusCountry),
+        colorScale = _.noop;
+
+    if (focusData) {
+        console.log(focusData);
+        sources = migrationSources(focusData,
+                                   centroids, nameIdMap);
+        colorScale = d3.scaleLog()
+                       .domain(d3.extent(sources.map(name => focusData.sources[name])))
+                       .range([0, 1]);
+    }
+
+    const isSource = (country) => sources.includes(idNameMap[country.id]),
+          color = (country) => {
+              if (isSource(country) && focusData){
+                  return d3.interpolateWarm(colorScale(
+                      focusData.sources[idNameMap[country.id]]
+                  ));
+              }else{
+                  return 'grey';
+              }
+          };
+
 
     return (
        <g>
@@ -15,7 +50,8 @@ const Map = ({ topology, projection }) => {
                      key={`${country.id}-${i}`}
                      style={{stroke: 'white',
                              strokeWidth: '0.25px',
-                             fill: 'grey'}} />
+                             fillOpacity: isSource(country) ? 1 : 0.5,
+                             fill: color(country)}} />
             ))}
        </g>
     );
@@ -40,13 +76,7 @@ const Curve = ({ start, end, color }) => {
 const CountryMigrations = ({ data, nameIdMap, centroids }) => {
     const destination = centroids[data.id];
 
-    /* console.log(Object.values(data.sources)
-       .filter(d => !Number.isNaN(d))
-       .reduce((d, sum) => d+sum, 0)); */
-
-    const sources = Object.keys(data.sources)
-                          .filter(name => centroids[nameIdMap[name]])
-                          .filter(name => data.sources[name] !== 0),
+    const sources = migrationSources(data, centroids, nameIdMap),
           color = d3.scaleLog()
                     .domain(d3.extent(sources.map(name => data.sources[name])))
                     .range([0, 1]);
@@ -117,7 +147,8 @@ class World extends Component {
 
         return (
             <svg width={width} height={height}>
-                <Map topology={topology} projection={this.projection} />
+                <Map topology={topology} projection={this.projection} data={this.props.data}
+                     nameIdMap={this.props.nameIdMap} focusCountry={this.props.focusCountry} />
                 <Migrations topology={topology} projection={this.projection}
                             data={this.props.data} nameIdMap={this.props.nameIdMap}
                             focusCountry={this.props.focusCountry} />
