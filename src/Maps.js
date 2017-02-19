@@ -23,7 +23,6 @@ const Map = ({ topology, projection, data, nameIdMap, focusCountry }) => {
         colorScale = _.noop;
 
     if (focusData) {
-        console.log(focusData);
         sources = migrationSources(focusData,
                                    centroids, nameIdMap);
         colorScale = d3.scaleLog()
@@ -57,20 +56,56 @@ const Map = ({ topology, projection, data, nameIdMap, focusCountry }) => {
     );
 };
 
-const Curve = ({ start, end, color }) => {
-    const line = d3.line()
-                   .curve(d3.curveBasis),
-          [x1, y1] = start,
-          [x2, y2] = end,
-          middle = [(x1 + x2)/2, (y1 + y2)/2-200];
+function translateAlong(path) {
+    var l = path.getTotalLength();
+    return function(d, i, a) {
+        return function(t) {
+            var p = path.getPointAtLength(t * l);
+            return "translate(" + p.x + "," + p.y + ")";
+        };
+    };
+}
 
-    return (
-        <path d={line([start, middle, end])}
-              style={{stroke: color,
-                      strokeWidth: '1.6px',
-                      strokeOpacity: '0.7',
-                      fillOpacity: 0}} />
-    );
+class MigrationLine extends Component {
+    _transform(circle) {
+        const { start } = this.props,
+              [ x1, y1 ] = start;
+
+        d3.select(circle)
+          .attr("transform", `translate(${x1}, ${y1})`)
+          .transition()
+          .duration(1000)
+          .attrTween("transform", translateAlong(this.refs.path))
+          .on("end", () => this._transform(circle));
+    }
+
+    componentDidMount() {
+        const circle = this.refs.circle;
+
+        this._transform(circle);
+    }
+
+    render() {
+        const { start, end, color } = this.props;
+        const line = d3.line()
+                       .curve(d3.curveBasis),
+              [x1, y1] = start,
+              [x2, y2] = end,
+              middle = [(x1 + x2)/2, (y1 + y2)/2-200];
+
+        return (
+            <g>
+                <circle r="3" style={{fill: color}} ref="circle" />
+
+                <path d={line([start, middle, end])}
+                      style={{stroke: color,
+                              strokeWidth: '1.6px',
+                              strokeOpacity: '0.7',
+                              fillOpacity: 0}}
+                      ref="path"/>
+            </g>
+        )
+    }
 };
 
 const CountryMigrations = ({ data, nameIdMap, centroids }) => {
@@ -81,14 +116,13 @@ const CountryMigrations = ({ data, nameIdMap, centroids }) => {
                     .domain(d3.extent(sources.map(name => data.sources[name])))
                     .range([0, 1]);
 
-    console.log(d3.extent(sources.map(name => data.sources[name])));
-
     return (
         <g>
             {sources.map((name, i) => (
-                <Curve start={centroids[nameIdMap[name]]} end={destination}
-                       color={d3.interpolateWarm(color(data.sources[name]))}
-                       key={`${data.id}-${i}`} />
+                <MigrationLine start={centroids[nameIdMap[name]]}
+                               end={destination}
+                               color={d3.interpolateWarm(color(data.sources[name]))}
+                               key={`${data.id}-${i}`} />
              ))}
         </g>
     )

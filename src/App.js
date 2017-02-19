@@ -53,7 +53,7 @@ class App extends Component {
                            focusCountry={this.state.focusCountry} />
                 </p>
                 <Select name="focusCountry"
-                        value=""
+                        value={this.state.focusCountry}
                         options={this.countries}
                         onChange={this.changeFocusCountry.bind(this)} />
             </div>
