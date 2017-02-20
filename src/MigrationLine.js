@@ -43,7 +43,7 @@ class MigrationLine extends Component {
             keepAnimating: true
         });
 
-        const delayDither = (this.duration/2)*Math.random(),
+        const delayDither = this.duration*Math.random(),
               spread = this.duration/Ncircles;
 
         d3.range(delayDither, this.duration+delayDither, spread)
